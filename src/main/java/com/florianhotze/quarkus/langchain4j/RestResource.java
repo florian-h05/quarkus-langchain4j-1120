@@ -1,5 +1,6 @@
 package com.florianhotze.quarkus.langchain4j;
 
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -37,18 +38,8 @@ class RestResource {
             @Content(
                     mediaType = MediaType.SERVER_SENT_EVENTS,
                     schema = @Schema(implementation = String.class)))
+    @Blocking
     public Multi<String> streamingPrompt(String prompt) {
-        Multi<String> sourceMulti =
-                Multi.createFrom()
-                        .emitter(
-                                emitter ->
-                                        assistant
-                                                .chat(prompt)
-                                                .onNext(emitter::emit)
-                                                .onError(emitter::fail)
-                                                .onComplete(response -> emitter.complete())
-                                                .start());
-
-        return RestMulti.fromMultiData(sourceMulti).withDemand(1).status(200).build();
+        return RestMulti.fromMultiData(assistant.chat(prompt)).withDemand(1).status(200).build();
     }
 }
